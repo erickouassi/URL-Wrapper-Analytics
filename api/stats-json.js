@@ -22,7 +22,11 @@ export default async function handler(req, res) {
   const timeRange = req.query.range || '30d'; // Options: 7d, 30d, this_month, this_year, 365d
 
   // 3. Build Telemetry Metadata Header
-  const isGaConfigured = Boolean(process.env.GA_MEASUREMENT_ID && process.env.GA_API_SECRET);
+  const isGaConfigured = Boolean(
+    process.env.GA_MEASUREMENT_ID && 
+    process.env.GA_PROPERTY_ID && 
+    process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+  );
   
   const baseResponse = {
     service: 'Url-Wrapper Analytics Engine',
@@ -93,15 +97,29 @@ async function getTargetStats(normalizedTarget, range) {
       break;
   }
 
-  // If GA4 Data API credentials exist, query live analytics
-  if (process.env.GA_PROPERTY_ID && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  const propertyId = process.env.GA_PROPERTY_ID;
+  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+
+  // If GA4 credentials exist in Environment Variables, query live Google Analytics Data API
+  if (propertyId && credentialsJson) {
     try {
       const { BetaAnalyticsDataClient } = await import('@google-analytics/data');
-      const analyticsDataClient = new BetaAnalyticsDataClient();
+      
+      // Parse credentials string safely from Vercel env
+      const credentials = typeof credentialsJson === 'string' 
+        ? JSON.parse(credentialsJson) 
+        : credentialsJson;
+
+      const analyticsDataClient = new BetaAnalyticsDataClient({
+        credentials: {
+          client_email: credentials.client_email,
+          private_key: credentials.private_key?.replace(/\\n/g, '\n')
+        }
+      });
 
       // Fetch target metrics
       const [response] = await analyticsDataClient.runReport({
-        property: `properties/${process.env.GA_PROPERTY_ID}`,
+        property: `properties/${propertyId}`,
         dateRanges: [dateRange],
         dimensions: [{ name: 'customEvent:target_hostname' }],
         metrics: [
@@ -139,7 +157,7 @@ async function getTargetStats(normalizedTarget, range) {
         visits: totalVisits,
         unique_visitors: totalUsers,
         ctr: ctr,
-        rank: '#1', // Dynamically populates based on comparative domain index
+        rank: '#1',
         period: range,
         source: 'live_ga4'
       };
@@ -164,6 +182,6 @@ async function getTargetStats(normalizedTarget, range) {
     rank: '#59',
     period: range,
     source: 'local_counter',
-    note: 'Configure GA_PROPERTY_ID env var to pull live GA4 reporting metrics.'
+    note: 'Add GOOGLE_APPLICATION_CREDENTIALS_JSON & GA_PROPERTY_ID env vars to pull live GA4 reporting.'
   };
 }
