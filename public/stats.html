@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Dashboard | Url-Wrapper</title>
+  <title>Target Analytics | Url-Wrapper</title>
   <link rel="manifest" href="/manifest.json">
   <script src="/sw-register.js" defer></script>
   <style>
     :root {
       --bg: #0f172a;
       --card: #1e293b;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
       --text: #f8fafc;
       --muted: #94a3b8;
-      --success: #22c55e;
       --border: #334155;
     }
     body {
@@ -28,274 +27,216 @@
     }
     .container {
       width: 100%;
-      max-width: 800px;
+      max-width: 850px;
     }
     header {
-      margin-bottom: 32px;
-    }
-    h1 { margin: 0 0 8px 0; font-size: 28px; }
-    p.subtitle { color: var(--muted); margin: 0; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 16px;
-      margin-bottom: 32px;
     }
-    .metric-card {
-      background: var(--card);
-      padding: 20px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-    .metric-label { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
-    .metric-value { font-size: 20px; font-weight: 700; color: var(--text); }
-    .status-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 99px;
-      font-size: 12px;
-      font-weight: 600;
-      background: rgba(34, 197, 94, 0.2);
-      color: var(--success);
-    }
-    .interactive-card {
+    h1 { margin: 0; font-size: 26px; }
+    p.subtitle { color: var(--muted); margin: 4px 0 0 0; font-size: 14px; }
+    
+    .card {
       background: var(--card);
       padding: 24px;
-      border-radius: 8px;
+      border-radius: 12px;
       border: 1px solid var(--border);
       margin-bottom: 24px;
     }
-    .input-group {
+    
+    .controls-row {
       display: flex;
       gap: 12px;
-      margin-top: 12px;
+      flex-wrap: wrap;
     }
-    input[type="text"],
-    input[type="url"] {
+
+    input[type="text"] {
       flex: 1;
+      min-width: 240px;
       padding: 12px 16px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: 1px solid var(--border);
       background: #020617;
       color: var(--text);
       font-size: 14px;
       outline: none;
     }
-    input[type="text"]:focus,
-    input[type="url"]:focus {
-      border-color: var(--accent);
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    select {
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #020617;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      cursor: pointer;
     }
+
     button {
       padding: 12px 20px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: none;
-      background: var(--accent);
+      background: #3b82f6;
       color: white;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
     }
-    button:hover { background: var(--accent-hover); }
-    .code-box {
-      background: #020617;
-      padding: 16px;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 14px;
-      color: #38bdf8;
-      overflow-x: auto;
-      border: 1px solid var(--border);
-      word-break: break-all;
-    }
-    .result-container {
-      margin-top: 16px;
-      display: none;
-    }
-    .stats-grid {
+    button:hover { background: #2563eb; }
+
+    /* Key Metric Cards */
+    .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-      margin-top: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
     }
-    .stats-item {
+
+    .metric-box {
       background: #020617;
-      padding: 14px;
-      border-radius: 6px;
+      padding: 20px;
+      border-radius: 10px;
       border: 1px solid var(--border);
     }
-    .stats-item .val {
-      font-size: 22px;
-      font-weight: bold;
-      color: #38bdf8;
+
+    .metric-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
     }
-    .stats-item .lbl {
+
+    .metric-val {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--accent);
+      margin: 8px 0 4px 0;
+    }
+
+    .metric-sub {
       font-size: 12px;
       color: var(--muted);
-      margin-top: 4px;
+    }
+
+    .target-header {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .target-url-highlight {
+      color: var(--accent);
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Url-Wrapper Service Dashboard</h1>
-      <p class="subtitle">Prefix Analytics & Engine Status</p>
+      <div>
+        <h1>URL Telemetry & Stats</h1>
+        <p class="subtitle">Performance reporting for wrapped destination links</p>
+      </div>
     </header>
 
-    <!-- Overall Service Metrics -->
-    <div class="grid">
-      <div class="metric-card">
-        <div class="metric-label">System Health</div>
-        <div class="metric-value" id="sys-status"><span class="status-badge">Checking...</span></div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Telemetry Engine</div>
-        <div class="metric-value" id="telemetry-status">Loading...</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Service Uptime</div>
-        <div class="metric-value" id="uptime">0s</div>
-      </div>
-    </div>
-
-    <!-- URL Metrics Lookup -->
-    <div class="interactive-card">
-      <h3 style="margin-top: 0; margin-bottom: 8px;">Check Target URL Analytics</h3>
-      <p style="color: var(--muted); margin-top: 0; font-size: 14px;">
-        Lookup click, impression, and visitor metrics for any target domain:
-      </p>
-      <div class="input-group">
+    <!-- Search & Range Control Panel -->
+    <div class="card">
+      <div class="controls-row">
         <input 
           type="text" 
           id="targetInput" 
-          placeholder="e.g. dailyrosary.cf or https://erickouassi.com" 
-          onkeydown="if(event.key === 'Enter') checkStats()"
+          placeholder="Enter target domain or URL (e.g. dailyrosary.cf)" 
+          onkeydown="if(event.key === 'Enter') loadStats()"
         />
-        <button onclick="checkStats()">Check Stats</button>
-      </div>
-
-      <div id="statsResult" class="result-container"></div>
-    </div>
-
-    <!-- Interactive URL Generator Tool -->
-    <div class="interactive-card">
-      <h3 style="margin-top: 0; margin-bottom: 8px;">Test URL Wrapper</h3>
-      <p style="color: var(--muted); margin-top: 0; font-size: 14px;">
-        Enter any destination URL or subdomain to generate a live wrapper link:
-      </p>
-      <div class="input-group">
-        <input type="url" id="target-input" placeholder="https://subdomain.example.com" required>
-        <button onclick="generateUrl()">Generate Link</button>
-      </div>
-
-      <div id="result-wrapper" class="result-container">
-        <p style="margin-bottom: 6px; font-size: 13px; color: var(--muted);">Generated Endpoint:</p>
-        <div class="code-box" id="result-output"></div>
+        <select id="timeRange" onchange="loadStats()">
+          <option value="7d">Last 7 days</option>
+          <option value="30d" selected>Last 30 days</option>
+          <option value="this_month">This month</option>
+          <option value="this_year">This year</option>
+          <option value="365d">Last 365 days</option>
+        </select>
+        <button onclick="loadStats()">View Stats</button>
       </div>
     </div>
 
-    <h2>Usage Syntax</h2>
-    <p style="color: var(--muted);">You can also prepend your wrapper domain manually in standard code or redirects:</p>
-    <div class="code-box" id="usage-example">
-      https://your-domain.vercel.app/go/https://subdomain.example.com
+    <!-- Metrics Results Panel -->
+    <div id="resultsCard" class="card" style="display: none;">
+      <div class="target-header">
+        Metrics for <span id="displayTarget" class="target-url-highlight"></span>
+      </div>
+
+      <div class="metrics-grid">
+        <!-- Impressions -->
+        <div class="metric-box">
+          <div class="metric-title">Impressions</div>
+          <div class="metric-val" id="val-impressions">0</div>
+          <div class="metric-sub">Times shown on the network</div>
+        </div>
+
+        <!-- Clicks -->
+        <div class="metric-box">
+          <div class="metric-title">Clicks</div>
+          <div class="metric-val" id="val-clicks">0</div>
+          <div class="metric-sub">Visits driven to your site</div>
+        </div>
+
+        <!-- CTR -->
+        <div class="metric-box">
+          <div class="metric-title">CTR</div>
+          <div class="metric-val" id="val-ctr">0.0%</div>
+          <div class="metric-sub">Click-through rate</div>
+        </div>
+
+        <!-- Rank -->
+        <div class="metric-box">
+          <div class="metric-title">Rank</div>
+          <div class="metric-val" id="val-rank">#-</div>
+          <div class="metric-sub">By overall network traffic</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    // Fetch global system health status
-    async function fetchStats() {
-      try {
-        const [healthRes, statsRes] = await Promise.all([
-          fetch('/health'),
-          fetch('/stats-json')
-        ]);
+    async function loadStats() {
+      const target = document.getElementById('targetInput').value.trim();
+      const range = document.getElementById('timeRange').value;
+      const resultsCard = document.getElementById('resultsCard');
 
-        const health = await healthRes.json();
-        const stats = await statsRes.json();
-
-        document.getElementById('sys-status').innerHTML = health.status === 'healthy' 
-          ? '<span class="status-badge">Operational</span>' 
-          : '<span class="status-badge" style="background:rgba(239,68,68,0.2);color:#ef4444">Issue</span>';
-
-        document.getElementById('telemetry-status').innerText = stats.telemetry?.status === 'configured' ? 'GA4 Active' : 'Pending Env Vars';
-        document.getElementById('uptime').innerText = Math.floor(health.uptime || 0) + 's';
-        document.getElementById('usage-example').innerText = `${window.location.origin}/go/https://subdomain.example.com`;
-      } catch (err) {
-        console.error('Failed to load dashboard metrics:', err);
-      }
-    }
-
-    // Lookup statistics for a specific target URL
-    async function checkStats() {
-      const targetInput = document.getElementById('targetInput').value.trim();
-      const resultContainer = document.getElementById('statsResult');
-      if (!targetInput) return;
-
-      resultContainer.style.display = 'block';
-      resultContainer.innerHTML = '<p style="color: var(--muted); font-size: 14px;">Querying telemetry data...</p>';
+      if (!target) return;
 
       try {
-        const res = await fetch(`/api/stats-json?target=${encodeURIComponent(targetInput)}`);
+        const res = await fetch(`/api/stats-json?target=${encodeURIComponent(target)}&range=${range}`);
         const data = await res.json();
-        
+
         if (data.metrics) {
           const m = data.metrics;
-          resultContainer.innerHTML = `
-            <p style="margin-top: 16px; margin-bottom: 8px; font-weight: 600;">Results for <span style="color:#38bdf8;">${m.target}</span> (${m.period}):</p>
-            <div class="stats-grid">
-              <div class="stats-item">
-                <div class="val">${m.total_redirects.toLocaleString()}</div>
-                <div class="lbl">Total Clicks</div>
-              </div>
-              <div class="stats-item">
-                <div class="val">${m.impressions.toLocaleString()}</div>
-                <div class="lbl">Impressions</div>
-              </div>
-              <div class="stats-item">
-                <div class="val">${m.visits.toLocaleString()}</div>
-                <div class="lbl">Visits / Sessions</div>
-              </div>
-              <div class="stats-item">
-                <div class="val">${m.unique_visitors.toLocaleString()}</div>
-                <div class="lbl">Unique Visitors</div>
-              </div>
-            </div>
-          `;
-        } else {
-          resultContainer.innerHTML = `<p style="color: #ef4444; font-size: 14px;">No metrics returned for query.</p>`;
+          document.getElementById('displayTarget').innerText = m.target;
+          document.getElementById('val-impressions').innerText = m.impressions.toLocaleString();
+          document.getElementById('val-clicks').innerText = m.clicks.toLocaleString();
+          document.getElementById('val-ctr').innerText = m.ctr;
+          document.getElementById('val-rank').innerText = m.rank;
+
+          resultsCard.style.display = 'block';
         }
       } catch (err) {
-        resultContainer.innerHTML = `<p style="color: #ef4444; font-size: 14px;">Failed to fetch stats for this URL.</p>`;
+        console.error('Error fetching statistics:', err);
       }
     }
 
-    // Generate Wrapper Link
-    function generateUrl() {
-      const input = document.getElementById('target-input').value.trim();
-      const resultContainer = document.getElementById('result-wrapper');
-      const resultOutput = document.getElementById('result-output');
-
-      if (!input || !/^https?:\/\//i.test(input)) {
-        alert('Please enter a valid target URL starting with http:// or https://');
-        return;
-      }
-
-      const generated = `${window.location.origin}/go/${input}`;
-      resultOutput.innerHTML = `<a href="${generated}" target="_blank" style="color: #38bdf8; text-decoration: underline;">${generated}</a>`;
-      resultContainer.style.display = 'block';
-    }
-
-    // Auto-fill from URL path if visitor opens /stats/https://...
+    // Auto-load if path includes target (/stats/https://dailyrosary.cf)
     window.addEventListener('DOMContentLoaded', () => {
-      fetchStats();
-      setInterval(fetchStats, 10000);
-
       const path = window.location.pathname;
       if (path.startsWith('/stats/')) {
-        const targetFromUrl = path.replace('/stats/', '');
-        if (targetFromUrl) {
-          document.getElementById('targetInput').value = decodeURIComponent(targetFromUrl);
-          checkStats();
+        const urlTarget = path.replace('/stats/', '');
+        if (urlTarget) {
+          document.getElementById('targetInput').value = decodeURIComponent(urlTarget);
+          loadStats();
         }
       }
     });
