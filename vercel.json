@@ -1,11 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "public": false,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/go/(.*)", "destination": "/api/go?target=$1" },
-    { "source": "/stats", "destination": "/stats.html" },
+    { "source": "/go/(.*)", "destination": "/api/go" },
+    { "source": "/stats", "destination": "/stats" },
     { "source": "/stats-json", "destination": "/api/stats-json" },
     { "source": "/health", "destination": "/api/health" }
   ],
