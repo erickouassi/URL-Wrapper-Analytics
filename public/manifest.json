@@ -1,6 +1,7 @@
 {
   "name": "URL Wrapper Analytics",
   "short_name": "Wrapper",
+  "description": "A self-hostable OP3-style URL analytics redirector that tracks clicks for any URL and provides public stats pages.",
   "start_url": "/stats",
   "display": "standalone",
   "background_color": "#ffffff",
