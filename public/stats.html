@@ -70,6 +70,7 @@
       gap: 12px;
       margin-top: 12px;
     }
+    input[type="text"],
     input[type="url"] {
       flex: 1;
       padding: 12px 16px;
@@ -80,6 +81,7 @@
       font-size: 14px;
       outline: none;
     }
+    input[type="text"]:focus,
     input[type="url"]:focus {
       border-color: var(--accent);
     }
@@ -109,6 +111,28 @@
       margin-top: 16px;
       display: none;
     }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .stats-item {
+      background: #020617;
+      padding: 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .stats-item .val {
+      font-size: 22px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+    .stats-item .lbl {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -118,6 +142,7 @@
       <p class="subtitle">Prefix Analytics & Engine Status</p>
     </header>
 
+    <!-- Overall Service Metrics -->
     <div class="grid">
       <div class="metric-card">
         <div class="metric-label">System Health</div>
@@ -133,18 +158,24 @@
       </div>
     </div>
 
-    <!-- Search Container -->
-<div class="search-box">
-  <input 
-    type="url" 
-    id="targetInput" 
-    placeholder="Paste your URL (e.g. https://dailyrosary.cf/)" 
-  />
-  <button onclick="checkStats()">Check Stats</button>
-</div>
+    <!-- URL Metrics Lookup -->
+    <div class="interactive-card">
+      <h3 style="margin-top: 0; margin-bottom: 8px;">Check Target URL Analytics</h3>
+      <p style="color: var(--muted); margin-top: 0; font-size: 14px;">
+        Lookup click, impression, and visitor metrics for any target domain:
+      </p>
+      <div class="input-group">
+        <input 
+          type="text" 
+          id="targetInput" 
+          placeholder="e.g. dailyrosary.cf or https://erickouassi.com" 
+          onkeydown="if(event.key === 'Enter') checkStats()"
+        />
+        <button onclick="checkStats()">Check Stats</button>
+      </div>
 
-<div id="statsResult"></div>
-
+      <div id="statsResult" class="result-container"></div>
+    </div>
 
     <!-- Interactive URL Generator Tool -->
     <div class="interactive-card">
@@ -171,6 +202,7 @@
   </div>
 
   <script>
+    // Fetch global system health status
     async function fetchStats() {
       try {
         const [healthRes, statsRes] = await Promise.all([
@@ -185,14 +217,59 @@
           ? '<span class="status-badge">Operational</span>' 
           : '<span class="status-badge" style="background:rgba(239,68,68,0.2);color:#ef4444">Issue</span>';
 
-        document.getElementById('telemetry-status').innerText = stats.telemetry.status === 'configured' ? 'GA4 Active' : 'Pending Env Vars';
-        document.getElementById('uptime').innerText = Math.floor(health.uptime) + ' seconds';
+        document.getElementById('telemetry-status').innerText = stats.telemetry?.status === 'configured' ? 'GA4 Active' : 'Pending Env Vars';
+        document.getElementById('uptime').innerText = Math.floor(health.uptime || 0) + 's';
         document.getElementById('usage-example').innerText = `${window.location.origin}/go/https://subdomain.example.com`;
       } catch (err) {
         console.error('Failed to load dashboard metrics:', err);
       }
     }
 
+    // Lookup statistics for a specific target URL
+    async function checkStats() {
+      const targetInput = document.getElementById('targetInput').value.trim();
+      const resultContainer = document.getElementById('statsResult');
+      if (!targetInput) return;
+
+      resultContainer.style.display = 'block';
+      resultContainer.innerHTML = '<p style="color: var(--muted); font-size: 14px;">Querying telemetry data...</p>';
+
+      try {
+        const res = await fetch(`/api/stats-json?target=${encodeURIComponent(targetInput)}`);
+        const data = await res.json();
+        
+        if (data.metrics) {
+          const m = data.metrics;
+          resultContainer.innerHTML = `
+            <p style="margin-top: 16px; margin-bottom: 8px; font-weight: 600;">Results for <span style="color:#38bdf8;">${m.target}</span> (${m.period}):</p>
+            <div class="stats-grid">
+              <div class="stats-item">
+                <div class="val">${m.total_redirects.toLocaleString()}</div>
+                <div class="lbl">Total Clicks</div>
+              </div>
+              <div class="stats-item">
+                <div class="val">${m.impressions.toLocaleString()}</div>
+                <div class="lbl">Impressions</div>
+              </div>
+              <div class="stats-item">
+                <div class="val">${m.visits.toLocaleString()}</div>
+                <div class="lbl">Visits / Sessions</div>
+              </div>
+              <div class="stats-item">
+                <div class="val">${m.unique_visitors.toLocaleString()}</div>
+                <div class="lbl">Unique Visitors</div>
+              </div>
+            </div>
+          `;
+        } else {
+          resultContainer.innerHTML = `<p style="color: #ef4444; font-size: 14px;">No metrics returned for query.</p>`;
+        }
+      } catch (err) {
+        resultContainer.innerHTML = `<p style="color: #ef4444; font-size: 14px;">Failed to fetch stats for this URL.</p>`;
+      }
+    }
+
+    // Generate Wrapper Link
     function generateUrl() {
       const input = document.getElementById('target-input').value.trim();
       const resultContainer = document.getElementById('result-wrapper');
@@ -208,34 +285,20 @@
       resultContainer.style.display = 'block';
     }
 
-    fetchStats();
-    setInterval(fetchStats, 10000);
+    // Auto-fill from URL path if visitor opens /stats/https://...
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchStats();
+      setInterval(fetchStats, 10000);
+
+      const path = window.location.pathname;
+      if (path.startsWith('/stats/')) {
+        const targetFromUrl = path.replace('/stats/', '');
+        if (targetFromUrl) {
+          document.getElementById('targetInput').value = decodeURIComponent(targetFromUrl);
+          checkStats();
+        }
+      }
+    });
   </script>
-  <script>
-  // Auto-fill from URL path if user visited /stats/https://...
-  window.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-    if (path.startsWith('/stats/')) {
-      const targetFromUrl = path.replace('/stats/', '');
-      document.getElementById('targetInput').value = decodeURIComponent(targetFromUrl);
-      checkStats();
-    }
-  });
-
-  async function checkStats() {
-    const targetUrl = document.getElementById('targetInput').value.trim();
-    if (!targetUrl) return;
-
-    const res = await fetch(`/api/stats-json?target=${encodeURIComponent(targetUrl)}`);
-    const data = await res.json();
-    
-    // Render the returned clicks/metrics on screen
-    document.getElementById('statsResult').innerHTML = `
-      <h3>Results for ${targetUrl}</h3>
-      <p>Total Redirect Clicks: <strong>${data.results?.length || 0}</strong></p>
-    `;
-  }
-</script>
-
 </body>
 </html>
