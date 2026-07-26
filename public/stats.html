@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>URL Stats</title>
+<link rel="manifest" href="/public/manifest.json">
+<script src="/public/sw-register.js"></script>
+<meta name="theme-color" content="#1a73e8">
+<link rel="icon" href="/public/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/public/icons/icon-512.png">
+
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    .box { padding: 10px; border: 1px solid #ccc; margin-bottom: 20px; }
+    canvas { width: 100%; height: 200px; }
+  </style>
+</head>
+<body>
+
+<h1>URL Stats</h1>
+<div id="info" class="box"></div>
+<div class="box">
+  <h3>Timeline</h3>
+  <canvas id="chart"></canvas>
+</div>
+<div class="box">
+  <h3>Recent Clicks</h3>
+  <pre id="recent"></pre>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const url = params.get("url");
+
+  fetch(`/stats/json?url=${encodeURIComponent(url)}`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("info").innerHTML = `
+        <strong>URL:</strong> ${url}<br>
+        <strong>Total Clicks:</strong> ${data.totalClicks}
+      `;
+
+      document.getElementById("recent").textContent =
+        JSON.stringify(data.recent, null, 2);
+
+      // Simple timeline chart
+      const ctx = document.getElementById("chart").getContext("2d");
+      const timestamps = data.recent.map(c => new Date(c.timestamp));
+      const counts = timestamps.map((_, i) => i + 1);
+
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: timestamps.map(t => t.toLocaleString()),
+          datasets: [{
+            label: "Clicks",
+            data: counts,
+            borderColor: "blue"
+          }]
+        }
+      });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>
