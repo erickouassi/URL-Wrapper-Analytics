@@ -4,7 +4,8 @@
     { "source": "/go/(.*)", "destination": "/api/go" },
     { "source": "/stats", "destination": "/stats" },
     { "source": "/stats-json", "destination": "/api/stats-json" },
-    { "source": "/health", "destination": "/api/health" }
+    { "source": "/health", "destination": "/api/health" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "headers": [
     {
