@@ -133,6 +133,19 @@
       </div>
     </div>
 
+    <!-- Search Container -->
+<div class="search-box">
+  <input 
+    type="url" 
+    id="targetInput" 
+    placeholder="Paste your URL (e.g. https://dailyrosary.cf/)" 
+  />
+  <button onclick="checkStats()">Check Stats</button>
+</div>
+
+<div id="statsResult"></div>
+
+
     <!-- Interactive URL Generator Tool -->
     <div class="interactive-card">
       <h3 style="margin-top: 0; margin-bottom: 8px;">Test URL Wrapper</h3>
@@ -198,5 +211,31 @@
     fetchStats();
     setInterval(fetchStats, 10000);
   </script>
+  <script>
+  // Auto-fill from URL path if user visited /stats/https://...
+  window.addEventListener('DOMContentLoaded', () => {
+    const path = window.location.pathname;
+    if (path.startsWith('/stats/')) {
+      const targetFromUrl = path.replace('/stats/', '');
+      document.getElementById('targetInput').value = decodeURIComponent(targetFromUrl);
+      checkStats();
+    }
+  });
+
+  async function checkStats() {
+    const targetUrl = document.getElementById('targetInput').value.trim();
+    if (!targetUrl) return;
+
+    const res = await fetch(`/api/stats-json?target=${encodeURIComponent(targetUrl)}`);
+    const data = await res.json();
+    
+    // Render the returned clicks/metrics on screen
+    document.getElementById('statsResult').innerHTML = `
+      <h3>Results for ${targetUrl}</h3>
+      <p>Total Redirect Clicks: <strong>${data.results?.length || 0}</strong></p>
+    `;
+  }
+</script>
+
 </body>
 </html>
