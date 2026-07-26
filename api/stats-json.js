@@ -1,23 +1,17 @@
-import fs from "fs";
-import path from "path";
-
 export default function handler(req, res) {
-  const url = req.query.url;
-  if (!url) return res.status(400).json({ error: "Missing ?url" });
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 
-  const file = path.join(process.cwd(), "data", "clicks.json");
-  let clicks = [];
-
-  if (fs.existsSync(file)) {
-    clicks = JSON.parse(fs.readFileSync(file));
-  }
-
-  const filtered = clicks.filter(c => c.url === url);
-
-  res.json({
-    url,
-    totalClicks: filtered.length,
-    recent: filtered.slice(-50)
+  return res.status(200).json({
+    service: 'Url-Wrapper Redirect Engine',
+    status: 'operational',
+    timestamp: new Date().toISOString(),
+    telemetry: {
+      provider: 'Google Analytics 4',
+      protocol: 'Measurement Protocol v2',
+      status: Boolean(process.env.GA_MEASUREMENT_ID && process.env.GA_API_SECRET) ? 'configured' : 'pending_env'
+    },
+    version: '1.0.0'
   });
 }
-
