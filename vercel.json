@@ -1,10 +1,11 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/go/(.*)", "destination": "/api/go" },
-    { "source": "/stats", "destination": "/stats" },
-    { "source": "/stats-json", "destination": "/api/stats-json" },
     { "source": "/health", "destination": "/api/health" },
+    { "source": "/stats-json", "destination": "/api/stats-json" },
+    { "source": "/stats/(.*)", "destination": "/stats.html" },
+    { "source": "/stats", "destination": "/stats.html" },
+    { "source": "/go/(.*)", "destination": "/api/go" },
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "headers": [
