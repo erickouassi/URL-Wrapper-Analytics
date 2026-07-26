@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/go", "destination": "/api/go" },
+    { "source": "/stats/json", "destination": "/api/stats-json" },
+    { "source": "/health", "destination": "/api/health" }
+  ]
+}
