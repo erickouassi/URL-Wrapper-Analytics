@@ -12,15 +12,17 @@ export default async function handler(req, res) {
     });
   }
 
-  let targetUrl = rawUrl.substring(prefixIndex + 4);
+let targetUrl = rawUrl.substring(prefixIndex + 4);
 
+  // Fix single-slash issues caused by browser path normalization (e.g. "https:/example.com" -> "https://example.com")
+  targetUrl = targetUrl.replace(/^(https?:\/)(?!\/)/i, '$1/');
+
+  // If no protocol was provided at all (e.g. "/go/erickouassi.com"), default to https://
   if (!/^https?:\/\//i.test(targetUrl)) {
-    return res.status(400).json({
-      error: 'Target must be a valid HTTP or HTTPS URL'
-    });
+    targetUrl = `https://${targetUrl}`;
   }
 
-  // Normalize target URL (appends trailing slash to bare subdomains/domains)
+  // Normalize full URL structure
   try {
     const parsedTarget = new URL(targetUrl);
     targetUrl = parsedTarget.toString();
