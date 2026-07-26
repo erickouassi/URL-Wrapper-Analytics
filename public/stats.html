@@ -1,67 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>URL Stats</title>
-<link rel="manifest" href="/public/manifest.json">
-<script src="/public/sw-register.js"></script>
-<meta name="theme-color" content="#1a73e8">
-<link rel="icon" href="/public/icons/icon-192.png">
-<link rel="apple-touch-icon" href="/public/icons/icon-512.png">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Dashboard | Url-Wrapper</title>
+  <link rel="manifest" href="/manifest.json">
+  <script src="/sw-register.js" defer></script>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    h1 { margin-bottom: 10px; }
-    .box { padding: 10px; border: 1px solid #ccc; margin-bottom: 20px; }
-    canvas { width: 100%; height: 200px; }
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --success: #22c55e;
+      --border: #334155;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+    header {
+      margin-bottom: 32px;
+    }
+    h1 { margin: 0 0 8px 0; font-size: 28px; }
+    p.subtitle { color: var(--muted); margin: 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .metric-card {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .metric-label { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+    .metric-value { font-size: 20px; font-weight: 700; color: var(--text); }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--success);
+    }
+    .interactive-card {
+      background: var(--card);
+      padding: 24px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .input-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    input[type="url"] {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #020617;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    input[type="url"]:focus {
+      border-color: var(--accent);
+    }
+    button {
+      padding: 12px 20px;
+      border-radius: 6px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { background: var(--accent-hover); }
+    .code-box {
+      background: #020617;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #38bdf8;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      word-break: break-all;
+    }
+    .result-container {
+      margin-top: 16px;
+      display: none;
+    }
   </style>
 </head>
 <body>
+  <div class="container">
+    <header>
+      <h1>Url-Wrapper Service Dashboard</h1>
+      <p class="subtitle">Prefix Analytics & Engine Status</p>
+    </header>
 
-<h1>URL Stats</h1>
-<div id="info" class="box"></div>
-<div class="box">
-  <h3>Timeline</h3>
-  <canvas id="chart"></canvas>
-</div>
-<div class="box">
-  <h3>Recent Clicks</h3>
-  <pre id="recent"></pre>
-</div>
+    <div class="grid">
+      <div class="metric-card">
+        <div class="metric-label">System Health</div>
+        <div class="metric-value" id="sys-status"><span class="status-badge">Checking...</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Telemetry Engine</div>
+        <div class="metric-value" id="telemetry-status">Loading...</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Service Uptime</div>
+        <div class="metric-value" id="uptime">0s</div>
+      </div>
+    </div>
 
-<script>
-  const params = new URLSearchParams(window.location.search);
-  const url = params.get("url");
+    <!-- Interactive URL Generator Tool -->
+    <div class="interactive-card">
+      <h3 style="margin-top: 0; margin-bottom: 8px;">Test URL Wrapper</h3>
+      <p style="color: var(--muted); margin-top: 0; font-size: 14px;">
+        Enter any destination URL or subdomain to generate a live wrapper link:
+      </p>
+      <div class="input-group">
+        <input type="url" id="target-input" placeholder="https://subdomain.example.com" required>
+        <button onclick="generateUrl()">Generate Link</button>
+      </div>
 
-  fetch(`/stats/json?url=${encodeURIComponent(url)}`)
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("info").innerHTML = `
-        <strong>URL:</strong> ${url}<br>
-        <strong>Total Clicks:</strong> ${data.totalClicks}
-      `;
+      <div id="result-wrapper" class="result-container">
+        <p style="margin-bottom: 6px; font-size: 13px; color: var(--muted);">Generated Endpoint:</p>
+        <div class="code-box" id="result-output"></div>
+      </div>
+    </div>
 
-      document.getElementById("recent").textContent =
-        JSON.stringify(data.recent, null, 2);
+    <h2>Usage Syntax</h2>
+    <p style="color: var(--muted);">You can also prepend your wrapper domain manually in standard code or redirects:</p>
+    <div class="code-box" id="usage-example">
+      https://your-domain.vercel.app/go/https://subdomain.example.com
+    </div>
+  </div>
 
-      // Simple timeline chart
-      const ctx = document.getElementById("chart").getContext("2d");
-      const timestamps = data.recent.map(c => new Date(c.timestamp));
-      const counts = timestamps.map((_, i) => i + 1);
+  <script>
+    async function fetchStats() {
+      try {
+        const [healthRes, statsRes] = await Promise.all([
+          fetch('/health'),
+          fetch('/stats-json')
+        ]);
 
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: timestamps.map(t => t.toLocaleString()),
-          datasets: [{
-            label: "Clicks",
-            data: counts,
-            borderColor: "blue"
-          }]
-        }
-      });
-    });
-</script>
+        const health = await healthRes.json();
+        const stats = await statsRes.json();
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        document.getElementById('sys-status').innerHTML = health.status === 'healthy' 
+          ? '<span class="status-badge">Operational</span>' 
+          : '<span class="status-badge" style="background:rgba(239,68,68,0.2);color:#ef4444">Issue</span>';
+
+        document.getElementById('telemetry-status').innerText = stats.telemetry.status === 'configured' ? 'GA4 Active' : 'Pending Env Vars';
+        document.getElementById('uptime').innerText = Math.floor(health.uptime) + ' seconds';
+        document.getElementById('usage-example').innerText = `${window.location.origin}/go/https://subdomain.example.com`;
+      } catch (err) {
+        console.error('Failed to load dashboard metrics:', err);
+      }
+    }
+
+    function generateUrl() {
+      const input = document.getElementById('target-input').value.trim();
+      const resultContainer = document.getElementById('result-wrapper');
+      const resultOutput = document.getElementById('result-output');
+
+      if (!input || !/^https?:\/\//i.test(input)) {
+        alert('Please enter a valid target URL starting with http:// or https://');
+        return;
+      }
+
+      const generated = `${window.location.origin}/go/${input}`;
+      resultOutput.innerHTML = `<a href="${generated}" target="_blank" style="color: #38bdf8; text-decoration: underline;">${generated}</a>`;
+      resultContainer.style.display = 'block';
+    }
+
+    fetchStats();
+    setInterval(fetchStats, 10000);
+  </script>
 </body>
 </html>

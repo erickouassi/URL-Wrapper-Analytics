@@ -1,20 +1,20 @@
 {
-  "name": "URL Wrapper Analytics",
-  "short_name": "Wrapper",
-  "description": "A self-hostable OP3-style URL analytics redirector that tracks clicks for any URL and provides public stats pages.",
+  "name": "Url-Wrapper Analytics",
+  "short_name": "UrlWrapper",
+  "description": "Transparent prefix URL redirect analytics platform.",
   "start_url": "/stats",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1a73e8",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
+      "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f517.png",
+      "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
+      "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f517.png",
+      "sizes": "192x192",
       "type": "image/png"
     }
   ]
