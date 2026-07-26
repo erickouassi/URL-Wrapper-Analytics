@@ -1,9 +1,10 @@
 {
   "version": 2,
+  "name": "url-wrapper-analytics",
+  "builds": [
+    { "src": "server.js", "use": "@vercel/node" }
+  ],
   "routes": [
-    { "src": "/go", "dest": "/api/go.js" },
-    { "src": "/stats/json", "dest": "/api/stats-json.js" },
-    { "src": "/health", "dest": "/api/health.js" },
-    { "src": "/(.*)", "dest": "/public/$1" }
+    { "src": "/(.*)", "dest": "/server.js" }
   ]
 }
