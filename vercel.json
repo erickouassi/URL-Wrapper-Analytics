@@ -1,10 +1,19 @@
 {
   "version": 2,
-  "name": "url-wrapper-analytics",
-  "builds": [
-    { "src": "server.js", "use": "@vercel/node" }
+  "rewrites": [
+    { "source": "/go/(.*)", "destination": "/api/go?target=$1" },
+    { "source": "/stats", "destination": "/stats.html" },
+    { "source": "/stats-json", "destination": "/api/stats-json" },
+    { "source": "/health", "destination": "/api/health" }
   ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/server.js" }
+  "headers": [
+    {
+      "source": "/api/go",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
+      ]
+    }
   ]
 }
