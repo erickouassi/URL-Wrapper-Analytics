@@ -4,7 +4,6 @@
  * Returns service status along with target URL click, visit, impression, CTR, and rank metrics.
  * Supports query parameters:
  *   - /api/stats-json?target=dailyrosary.cf&range=30d
- *   - /api/stats-json?target=https://erickouassi.com/&range=7d
  */
 
 export default async function handler(req, res) {
@@ -61,10 +60,17 @@ export default async function handler(req, res) {
         metrics: targetStats
       });
     } catch (err) {
-      return res.status(500).json({
+      // Return 200 with fallback data instead of crashing with 500
+      console.error('Telemetry query error:', err.message);
+
+      return res.status(200).json({
         ...baseResponse,
-        error: 'Failed to retrieve analytics metrics for target',
-        details: err.message
+        query: {
+          raw: rawTarget,
+          normalized: normalizedTarget,
+          range: timeRange
+        },
+        metrics: getFallbackStats(normalizedTarget, timeRange, err.message)
       });
     }
   }
@@ -76,7 +82,6 @@ export default async function handler(req, res) {
  * Helper function to query metrics for a specific target URL or domain.
  */
 async function getTargetStats(normalizedTarget, range) {
-  // Map time-range parameter to GA4 date range structure
   let dateRange = { startDate: '30daysAgo', endDate: 'today' };
   switch (range) {
     case '7d':
@@ -100,74 +105,76 @@ async function getTargetStats(normalizedTarget, range) {
   const propertyId = process.env.GA_PROPERTY_ID;
   const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
-  // If GA4 credentials exist in Environment Variables, query live Google Analytics Data API
   if (propertyId && credentialsJson) {
+    // Safely try loading module
+    let BetaAnalyticsDataClient;
     try {
-      const { BetaAnalyticsDataClient } = await import('@google-analytics/data');
-      
-      // Parse credentials string safely from Vercel env
-      const credentials = typeof credentialsJson === 'string' 
-        ? JSON.parse(credentialsJson) 
-        : credentialsJson;
+      const gaData = await import('@google-analytics/data');
+      BetaAnalyticsDataClient = gaData.BetaAnalyticsDataClient;
+    } catch (e) {
+      console.warn('@google-analytics/data module not installed or failing to load.');
+      return getFallbackStats(normalizedTarget, range, 'Missing @google-analytics/data dependency');
+    }
 
-      const analyticsDataClient = new BetaAnalyticsDataClient({
-        credentials: {
-          client_email: credentials.client_email,
-          private_key: credentials.private_key?.replace(/\\n/g, '\n')
-        }
-      });
+    const credentials = typeof credentialsJson === 'string' 
+      ? JSON.parse(credentialsJson) 
+      : credentialsJson;
 
-      // Fetch target metrics
-      const [response] = await analyticsDataClient.runReport({
-        property: `properties/${propertyId}`,
-        dateRanges: [dateRange],
-        dimensions: [{ name: 'customEvent:target_hostname' }],
-        metrics: [
-          { name: 'screenPageViews' }, // Impressions
-          { name: 'eventCount' },      // Clicks / Redirects
-          { name: 'sessions' },        // Total Visits
-          { name: 'activeUsers' }     // Unique Visitors
-        ],
-        dimensionFilter: {
-          filter: {
-            fieldName: 'customEvent:target_hostname',
-            stringFilter: {
-              matchType: 'CONTAINS',
-              value: normalizedTarget,
-              caseSensitive: false
-            }
+    const analyticsDataClient = new BetaAnalyticsDataClient({
+      credentials: {
+        client_email: credentials.client_email,
+        private_key: credentials.private_key?.replace(/\\n/g, '\n')
+      }
+    });
+
+    const [response] = await analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [dateRange],
+      dimensions: [{ name: 'customEvent:target_hostname' }],
+      metrics: [
+        { name: 'screenPageViews' },
+        { name: 'eventCount' },
+        { name: 'sessions' },
+        { name: 'activeUsers' }
+      ],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'customEvent:target_hostname',
+          stringFilter: {
+            matchType: 'CONTAINS',
+            value: normalizedTarget,
+            caseSensitive: false
           }
         }
-      });
+      }
+    });
 
-      const totalImpressions = response.rows?.reduce((acc, row) => acc + parseInt(row.metricValues[0].value, 10), 0) || 0;
-      const totalClicks = response.rows?.reduce((acc, row) => acc + parseInt(row.metricValues[1].value, 10), 0) || 0;
-      const totalVisits = response.rows?.reduce((acc, row) => acc + parseInt(row.metricValues[2].value, 10), 0) || 0;
-      const totalUsers = response.rows?.reduce((acc, row) => acc + parseInt(row.metricValues[3].value, 10), 0) || 0;
+    const totalImpressions = response.rows?.reduce((acc, row) => acc + parseInt(row.metricValues[0].value, 10), 0) || 0;
+    const totalClicks = response.rows?.reduce((acc, row) => acc + parseInt(row.metricValues[1].value, 10), 0) || 0;
+    const totalVisits = response.rows?.reduce((acc, row) => acc + parseInt(row.metricValues[2].value, 10), 0) || 0;
+    const totalUsers = response.rows?.reduce((acc, row) => acc + parseInt(row.metricValues[3].value, 10), 0) || 0;
 
-      // Calculate Click-Through Rate (CTR)
-      const ctr = totalImpressions > 0 
-        ? ((totalClicks / totalImpressions) * 100).toFixed(1) + '%' 
-        : '0.0%';
+    const ctr = totalImpressions > 0 
+      ? ((totalClicks / totalImpressions) * 100).toFixed(1) + '%' 
+      : '0.0%';
 
-      return {
-        target: normalizedTarget,
-        impressions: totalImpressions,
-        clicks: totalClicks,
-        visits: totalVisits,
-        unique_visitors: totalUsers,
-        ctr: ctr,
-        rank: '#1',
-        period: range,
-        source: 'live_ga4'
-      };
-    } catch (apiErr) {
-      console.error('GA4 Reporting API Error:', apiErr);
-      throw apiErr;
-    }
+    return {
+      target: normalizedTarget,
+      impressions: totalImpressions,
+      clicks: totalClicks,
+      visits: totalVisits,
+      unique_visitors: totalUsers,
+      ctr: ctr,
+      rank: '#1',
+      period: range,
+      source: 'live_ga4'
+    };
   }
 
-  // Standalone / Local Default Demo Response Object
+  return getFallbackStats(normalizedTarget, range, 'Environment variables not configured');
+}
+
+function getFallbackStats(normalizedTarget, range, reason) {
   const demoImpressions = 18;
   const demoClicks = 1;
   const demoCtr = ((demoClicks / demoImpressions) * 100).toFixed(1) + '%';
@@ -182,6 +189,6 @@ async function getTargetStats(normalizedTarget, range) {
     rank: '#59',
     period: range,
     source: 'local_counter',
-    note: 'Add GOOGLE_APPLICATION_CREDENTIALS_JSON & GA_PROPERTY_ID env vars to pull live GA4 reporting.'
+    note: `Fallback active (${reason}). Run npm install @google-analytics/data and verify env vars.`
   };
 }
